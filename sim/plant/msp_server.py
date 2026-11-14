@@ -39,17 +39,26 @@ class SimDroneServer:
         self._seq = itertools.count()
         self.clients = 0
         self._last_due = 0.0
+        self._writers: set = set()
 
     async def start(self) -> None:
         self._server = await asyncio.start_server(self._on_client, self.host, self.port)
 
     async def stop(self) -> None:
+        """Like powering the drone off: drop every client, then stop listening.
+        (Python >= 3.12 wait_closed() blocks until all client connections close.)"""
         if self._server:
             self._server.close()
-            await self._server.wait_closed()
+            for w in list(self._writers):
+                w.close()
+            try:
+                await asyncio.wait_for(self._server.wait_closed(), 2.0)
+            except asyncio.TimeoutError:
+                pass
 
     async def _on_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         self.clients += 1
+        self._writers.add(writer)
         parser = msp.MspParser()
         try:
             while True:
@@ -68,6 +77,7 @@ class SimDroneServer:
             pass
         finally:
             self.clients -= 1
+            self._writers.discard(writer)
             writer.close()
 
     def process_due(self) -> None:
