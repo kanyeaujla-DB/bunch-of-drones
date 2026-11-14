@@ -13,8 +13,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
-vision = ["opencv-contrib-python>=4.7"]   # localization team (P1)
+dev = ["pytest>=7", "opencv-contrib-python>=4.7", "plutocontrol==2.0.0"]
+vision = ["opencv-contrib-python>=4.7"]   # ArUco + PnP + USB camera (C920)
+realsense = ["pyrealsense2"]              # final-demo D455f, colour stream only
+plutocontrol = ["plutocontrol==2.0.0"]    # fallback link (link.type: plutocontrol)
 
 [project.scripts]
 pluto-run = "pluto_swarm.apps.run_mission:main"
