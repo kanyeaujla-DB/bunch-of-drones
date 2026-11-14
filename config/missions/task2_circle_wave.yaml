@@ -1,12 +1,18 @@
 # Task 2 - rotating circle with Z oscillation (architecture doc §6). Used from P3.
-# m = 0: all drones bob in phase (MoM wording); m = 1: wave travels around the ring.
+#
+# Geometry confirmed from Drona's reference animation:
+#   * the circle lies in the horizontal (XY) plane and rotates clockwise seen from above;
+#   * all drones follow ONE shared Z sine, i.e. they bob in phase (m = 0).
+# m = 1 (a wave travelling around the ring) is kept as an option only.
+
 name: task2_circle_wave
 type: circle_wave
-radius_m: 0.70
+radius_m: 0.70               # chord 0.99 m for N = 4 (>= 0.514 m minimum)
 height_m: 1.0
 z_amplitude_m: 0.25
-z_period_s: 5.0
-rotation_period_s: 20.0
-m: 0
+z_period_s: 5.0              # peak climb rate 0.31 m/s
+rotation_period_s: 20.0      # tangential speed 0.22 m/s
+rotation_direction: cw       # cw | ccw, seen from above (looking down -Z)
+m: 0                         # phase step between neighbours = m * 2*pi / N
 centre: [1.5, 1.5]
 ramp_periods: 2

@@ -1,0 +1,39 @@
+# Intel RealSense D455f - OUR camera for the final demonstration.
+# Used by profile `final_demo`. Colour stream ONLY: depth is deliberately not used,
+# so the algorithm is identical to the C920 one.
+#
+# STATUS: intrinsics NOT calibrated yet (factory values can be read from the
+# device, but calibrate with ChArUco at the operating resolution anyway).
+
+model: realsense_d455f
+shutter: global
+width: 1280
+height: 800
+fps: 60                       # 30 also fine; 60 lowers latency
+readout_s: 0.0                # global shutter
+enable_depth: false           # keep false - same algorithm as the C920
+enable_infrared: false
+
+nominal:
+  hfov_deg: 87.0              # datasheet RGB FOV 87 x 62 deg
+  vfov_deg: 62.0
+  fx_px: 674
+  fy_px: 674
+
+# Pixel budget: ~22 px for an 8 cm marker at 2.5 m (half the C920's).
+# Mount within ~2.5 m of the flight plane and use 8 cm markers.
+
+intrinsics:                   # filled in by `apps/calibrate.py`
+  calibrated: false
+  camera_matrix: null
+  dist_coeffs: null
+  rms_px: null
+
+# RealSense colour-sensor options (pyrealsense2 rs.option names).
+rs_options:
+  enable_auto_exposure: 0
+  exposure: 50                # units of 100 us -> 5 ms
+  gain: 64
+  enable_auto_white_balance: 0
+  white_balance: 4000
+  power_line_frequency: 1     # 50 Hz

@@ -1,4 +1,4 @@
-# final_demo: real drones, OUR camera.
+# final_demo: real drones, OUR camera (RealSense D455f, colour stream only).
 
 name: final_demo
 link:
@@ -6,8 +6,9 @@ link:
   host_override: null
   base_port: null
 camera:
-  type: opencv
-  intrinsics: config/camera/intrinsics_ourcam.yaml
+  type: realsense              # pyrealsense2, colour only - depth disabled (P1)
+  serial: null                 # null = first RealSense found
+  model: config/camera/d455_rgb.yaml
   extrinsics: config/camera/extrinsics_final.yaml
 sim:
   spawn: false
