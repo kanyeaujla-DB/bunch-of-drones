@@ -1,0 +1,6 @@
+# Example only. Replace values after confirming the hardware interface.
+drones:
+  - id: drone_1
+  - id: drone_2
+  - id: drone_3
+  - id: drone_4
