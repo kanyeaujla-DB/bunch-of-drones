@@ -21,8 +21,8 @@ protocol as a real drone, so going from simulation to real flight is a
 |---|---|---|
 | `sim` | firmware emulator (127.0.0.1) | synthetic (P1) |
 | `gazebo` | firmware emulator + Gazebo rendering | Gazebo camera (P1) |
-| `airlink` | real Plutos at the test site | site camera |
-| `final_demo` | real Plutos | our camera |
+| `airlink` | real Plutos at the test site | Drona's Logitech C920 |
+| `final_demo` | real Plutos | our RealSense D455f, colour stream only |
 
 ## Quick start (Ubuntu 22.04)
 
