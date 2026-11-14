@@ -1,0 +1,15 @@
+# Arena geometry. World frame "arena": origin at one floor corner,
+# X and Y along the walls, Z UP. Units: metres, radians.
+
+size_x: 3.0
+size_y: 3.0
+ceiling: 3.05            # 10 ft (MoM §3)
+
+geofence:
+  soft_margin: 0.30      # reference clipped if a drone gets this close to a wall
+  hard_margin: 0.10      # drone LANDs if it gets this close
+  z_min_flight: 0.5
+  z_max_flight: 2.0
+
+# Floor markers used by the 5-minute extrinsic calibration (filled in per site).
+origin_markers: []

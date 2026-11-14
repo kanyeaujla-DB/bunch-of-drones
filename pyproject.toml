@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pluto-swarm"
+version = "0.1.0"
+description = "Synchronized multi-drone swarm for Pluto drones (Inter IIT Tech Meet 15.0, Drona Aviation)"
+requires-python = ">=3.10"           # Ubuntu 22.04 ships 3.10 - keep code compatible
+dependencies = [
+    "numpy>=1.21",
+    "pyyaml>=5.4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+vision = ["opencv-contrib-python>=4.7"]   # localization team (P1)
+
+[project.scripts]
+pluto-run = "pluto_swarm.apps.run_mission:main"
+
+[tool.setuptools.packages.find]
+where = ["src", "."]
+include = ["pluto_swarm*", "sim*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

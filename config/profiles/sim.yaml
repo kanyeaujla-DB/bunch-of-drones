@@ -1,0 +1,16 @@
+# PROFILE = which backends sit at the two swappable edges. Nothing else.
+# sim: our firmware emulator, one MSP-over-TCP server per drone on this PC.
+
+name: sim
+link:
+  type: msp                    # same driver as real drones
+  host_override: 127.0.0.1     # ignore swarm.yaml IPs
+  base_port: 5760              # drone i -> 5760 + i
+camera:
+  type: none                   # P1: synthetic
+sim:
+  spawn: true                  # run_mission starts the emulator itself (one terminal)
+  physics_hz: 200
+  link_delay_s: 0.04           # simulated Wi-Fi delay, one way
+  link_jitter_s: 0.01
+  seed: 1

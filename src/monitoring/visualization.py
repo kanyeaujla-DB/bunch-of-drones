@@ -1,1 +1,0 @@
-"""Live visualization. Implementation pending."""

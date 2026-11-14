@@ -1,0 +1,6 @@
+# P0 exit test: all drones take off, hover, land - from one command.
+# No position loop yet: sticks stay neutral, so drones drift (that is expected in P0).
+
+name: hover_test
+type: hover
+hover_s: 8.0

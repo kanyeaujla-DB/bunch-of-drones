@@ -1,0 +1,39 @@
+# Pluto / Primus V5 plant model.
+# Read by BOTH the simulator (sim/plant) and, later, the controller design.
+#
+# STATUS: values come from reading MagisV2 firmware source, NOT from measurement.
+# Airlink session 1 (system identification) must replace them -> tools/sysid.py.
+
+mass_kg: 0.054                 # Pluto 1.2 SDF
+g: 9.81
+
+# Horizontal axis (firmware angle mode)
+stick_to_tilt_deg_per_us: 0.2  # rc - 1500 -> tilt set-point; MultiWii PID doubles the stick
+max_tilt_deg: 20.0             # max_angle_inclination = 200 (deci-degrees)
+attitude_tau_s: 0.15           # first-order attitude lag (guess 0.1-0.2)
+drag_per_s: 0.3                # linear drag coefficient (guess)
+
+# Vertical axis (firmware baro alt-hold): v = (rc - 1500) / 4 cm/s
+alt_hold_cm_s_per_us: 0.25
+alt_hold_deadband_us: 40
+alt_hold_v_min_cm_s: -100
+alt_hold_v_max_cm_s: 120
+z_tau_s: 0.3                   # onboard alt-hold response (guess)
+
+# Yaw (stick -> yaw rate). Guess; verify.
+yaw_rate_deg_s_per_us: 0.4
+
+# Firmware commands
+takeoff_height_cm: 120         # command.cpp: takeOffHeight = 120 (relative)
+takeoff_climb_cm_s: 60         # guess
+land_descent_cm_s: 40          # guess
+rc_loss_timeout_s: 1.0         # firmware lands on RX loss while armed (guess on timeout)
+
+# Sensors / battery (emulator only)
+baro_noise_cm: 3.0
+baro_drift_cm_per_min: 5.0
+battery_full_v: 4.2
+battery_drain_v_per_min: 0.08
+
+# Simulated imperfections per drone (emulator only)
+accel_bias_sigma_m_s2: 0.10    # random constant bias per drone = trim error

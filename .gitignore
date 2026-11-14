@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- Pluto swarm project ----
+logs/*
+!logs/.gitkeep
+.venv/
+*.bag
+# colcon / ROS build output (if anyone builds the optional ROS bridge)
+install/
+log/

@@ -1,0 +1,10 @@
+# Which drones exist. N is the length of this list - code never assumes N = 4.
+# ip/port are the REAL drone addresses (used by the airlink / final_demo profiles).
+# The sim profile ignores ip/port and gives each drone 127.0.0.1:<base_port + index>.
+# start_slot is where the drone sits on the floor before take-off, in arena metres.
+
+drones:
+  - {id: 1, ip: 192.168.0.11, port: 23, marker_id: 1, start_slot: [0.60, 0.90]}
+  - {id: 2, ip: 192.168.0.12, port: 23, marker_id: 2, start_slot: [1.20, 0.90]}
+  - {id: 3, ip: 192.168.0.13, port: 23, marker_id: 3, start_slot: [1.80, 0.90]}
+  - {id: 4, ip: 192.168.0.14, port: 23, marker_id: 4, start_slot: [2.40, 0.90]}

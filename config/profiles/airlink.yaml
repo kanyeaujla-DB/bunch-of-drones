@@ -1,0 +1,13 @@
+# airlink: real Pluto drones at Drona's site, Drona's camera rig.
+
+name: airlink
+link:
+  type: msp
+  host_override: null          # use the IPs in swarm.yaml
+  base_port: null
+camera:
+  type: opencv                 # P1
+  intrinsics: config/camera/intrinsics_airlink.yaml
+  extrinsics: config/camera/extrinsics_airlink.yaml
+sim:
+  spawn: false
