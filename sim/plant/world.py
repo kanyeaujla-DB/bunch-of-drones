@@ -34,10 +34,14 @@ class SimWorld:
         self.physics_hz = float(sim.get("physics_hz", 200))
         seed = sim.get("seed")
         root_rng = np.random.default_rng(seed)
+        # Robustness testing: the simulated drones may differ from the plant the
+        # controller assumes (sim.plant_overrides), e.g. a slower attitude loop.
+        plant = {**cfg.plant, **(sim.get("plant_overrides") or {})}
+        self.plant = plant
         self.servers: List[SimDroneServer] = []
         for d in cfg.drones:
             rng = np.random.default_rng(root_rng.integers(1 << 31))
-            model = PlutoFirmwareModel(cfg.plant, start_xy=d.start_slot, rng=rng)
+            model = PlutoFirmwareModel(plant, start_xy=d.start_slot, rng=rng)
             self.servers.append(SimDroneServer(
                 d.id, model, d.host, d.port,
                 delay_s=float(sim.get("link_delay_s", 0.0)),
@@ -84,7 +88,8 @@ class SimWorld:
         for s in self.servers:
             m = s.model
             out[s.drone_id] = {"pos": m.s.pos.copy(), "vel": m.s.vel.copy(),
-                               "yaw": m.s.yaw, "phase": m.phase.value}
+                               "yaw": m.s.yaw, "phi": m.s.phi, "theta": m.s.theta,
+                               "phase": m.phase.value}
         return out
 
 

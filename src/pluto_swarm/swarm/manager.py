@@ -1,8 +1,15 @@
 """SwarmManager - owns all drone links and the flight state machine.
 
-P0 scope: connect -> preflight -> take off all -> hover -> land all.
-P1+ adds: the per-tick position loop (localization -> planning -> control -> safety)
-inside SwarmTicker._loop, between "read state" and "write RC".
+Open loop (P0, no camera): connect -> preflight -> take off all -> hover -> land all.
+Closed loop (fly_mission): the per-tick loop in swarm/flight.py runs inside
+SwarmTicker, between "read state" and "write RC":
+    preflight (links + tracking) -> take-off with XY hold -> plan + plan
+    validation -> TRANSFER -> FORMATION -> SETTLE -> land with XY hold -> disarm.
+
+Arm / take-off / land copy PlutoControl 2.0.0 exactly:
+    take_off(): disarm frame, then throttle 1800 + AUX4 1500 + MSP_SET_COMMAND 1
+    land():     MSP_SET_COMMAND 2 (sticks unchanged)
+    disarm():   throttle 1300 + AUX4 1200
 
 Operator safety (architecture doc §7, layer 3):
     Ctrl+C once  -> LAND all drones
@@ -18,8 +25,9 @@ from typing import Callable, Dict, List, Optional
 
 from ..core.clock import now
 from ..core.config import Config
-from ..core.types import FirmwareCommand, FlightPhase, RCFrame
-from ..hal.msp_link import MspLink
+from ..core.types import FirmwareCommand, FlightPhase, Health, RCFrame
+from ..hal.base import DroneLink
+from ..hal.factory import make_link
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +36,7 @@ class SwarmTicker:
     """ONE loop sends every drone's RC frame in the same tick (sync to ~1 ms).
     on_tick(t) runs first each tick - that is where the control loop will live."""
 
-    def __init__(self, links: List[MspLink], rate_hz: float,
+    def __init__(self, links: List[DroneLink], rate_hz: float,
                  on_tick: Optional[Callable[[float], None]] = None) -> None:
         self.links, self.rate_hz, self.on_tick = links, rate_hz, on_tick
         self._task: Optional[asyncio.Task] = None
@@ -71,10 +79,15 @@ class SwarmManager:
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         self.rc_cfg = cfg.control.get("rc", {})
-        self.links: Dict[int, MspLink] = {d.id: MspLink(d, cfg.control) for d in cfg.drones}
+        self.links: Dict[int, DroneLink] = {d.id: make_link(d, cfg.profile, cfg.control)
+                                            for d in cfg.drones}
         self.phase: Dict[int, FlightPhase] = {i: FlightPhase.IDLE for i in self.links}
         self.ticker = SwarmTicker(list(self.links.values()), cfg.control.get("rate_hz", 50))
         self.abort_requested = False
+        self.base: Dict[int, RCFrame] = {i: self._frame(armed=False, throttle=1000) for i in self.links}
+        for i, l in self.links.items():
+            self.base[i] = replace(self.base[i], aux4=self.rc_cfg.get("aux4_disarmed", 1000))
+        self.flight = None                       # ClosedLoopFlight when a camera is available
 
     # ------------------------------------------------------------ connection
     async def connect_all(self) -> List[str]:
@@ -121,16 +134,35 @@ class SwarmManager:
                        aux4=rc.get("aux4_armed", 1500) if armed else rc.get("aux4_disarm_cmd", 1200))
 
     def set_all(self, frame: RCFrame) -> None:
-        for l in self.links.values():
+        """Base frame for every drone (arm switch, throttle during take-off/land).
+        With closed-loop flight attached, it overlays roll/pitch/yaw(/throttle)."""
+        for i, l in self.links.items():
+            self.base[i] = replace(frame)
             l.set_rc(replace(frame))
+
+    def set_one(self, i: int, frame: RCFrame) -> None:
+        self.base[i] = replace(frame)
+        self.links[i].set_rc(replace(frame))
+
+    def base_frame(self, i: int) -> RCFrame:
+        return self.base[i]
+
+    def _airborne(self, i: int, value: bool) -> None:
+        if self.flight is not None:
+            self.flight.airborne[i] = value
 
     # ------------------------------------------------------------ flight
     async def takeoff_all(self, timeout_s: float = 8.0) -> bool:
         log.info("TAKE-OFF all drones")
+        # PlutoControl take_off(): disarm frame first (arm switch must be seen LOW),
+        # then box-arm (throttle 1800, AUX4 1500) together with TAKE_OFF.
+        self.set_all(self._frame(armed=False, throttle=1300))
+        await asyncio.sleep(2.5 / float(self.cfg.control.get("rate_hz", 50)))
         self.set_all(self._frame(armed=True, throttle=int(self.rc_cfg.get("takeoff_throttle", 1800))))
         for i, l in self.links.items():
             l.send_command(FirmwareCommand.TAKE_OFF)
             self.phase[i] = FlightPhase.TAKING_OFF
+            self._airborne(i, True)
         await asyncio.sleep(float(self.rc_cfg.get("takeoff_hold_s", 0.5)))
         self.set_all(self._frame(armed=True, throttle=1500))     # 1500 = hold height
 
@@ -155,7 +187,11 @@ class SwarmManager:
         log.info("LAND all drones")
         self.set_all(self._frame(armed=True, throttle=1500))   # keep arm switch ON while landing
         for i, l in self.links.items():
-            l.send_command(FirmwareCommand.LAND)
+            if self.flight is not None and self.flight.mode[i].value in ("full", "xy_hold"):
+                from .flight import Mode
+                self.flight.hold_here(i, Mode.XY_HOLD)          # keep XY while descending
+            if not (self.flight is not None and self.flight.land_requested[i]):
+                l.send_command(FirmwareCommand.LAND)
             self.phase[i] = FlightPhase.LANDING
         await asyncio.sleep(1.0)
         t_end = now() + timeout_s
@@ -169,12 +205,17 @@ class SwarmManager:
 
     def disarm_all(self) -> None:
         log.warning("DISARM all drones")
-        self.set_all(self._frame(armed=False, throttle=1000))
+        if self.flight is not None:
+            from .flight import Mode
+            for i in self.links:
+                self.flight.mode[i] = Mode.OFF
+        self.set_all(self._frame(armed=False, throttle=int(self.rc_cfg.get("disarm_throttle", 1300))))
         for i in self.links:
             self.phase[i] = FlightPhase.LANDED
+            self._airborne(i, False)
 
     @staticmethod
-    def _looks_landed(l: MspLink) -> bool:
+    def _looks_landed(l: DroneLink) -> bool:
         tel = l.telemetry
         return (tel.alt_m is not None and tel.alt_m < 0.15
                 and abs(tel.vario_m_s or 0.0) < 0.05)
@@ -186,3 +227,54 @@ class SwarmManager:
             if not l.connected or t - l.telemetry.t > timeout:
                 log.error("drone %d: link/telemetry lost - firmware will land it; aborting mission", i)
                 self.abort_requested = True
+
+    # ------------------------------------------------------------ closed loop
+    def attach_flight(self, localizer) -> None:
+        from .flight import ClosedLoopFlight
+        self.flight = ClosedLoopFlight(self.cfg, self.links, localizer, self.base_frame)
+        self.ticker.on_tick = self.flight.on_tick
+
+    async def wait_tracking(self, timeout_s: float = 5.0) -> List[str]:
+        """Every drone must be seen by the camera (health OK) before arming."""
+        loc = self.flight.loc
+        t_end = now() + timeout_s
+        while now() < t_end:
+            if all(loc.state(i).health == Health.OK for i in self.links):
+                return []
+            await asyncio.sleep(0.1)
+        return [f"drone {i}: not tracked by the camera ({loc.state(i).health.value})"
+                for i in self.links if loc.state(i).health != Health.OK]
+
+    async def fly_mission(self, mission: Dict, limits: Dict) -> int:
+        """Closed-loop mission. Returns 0 on success, non-zero on abort."""
+        from ..planning.mission import MissionPlan
+        from ..safety.preflight_validation import validate_plan
+        from .flight import Mode
+        fl = self.flight
+        for i in self.links:                   # XY hold over the take-off spot
+            fl.hold_here(i, Mode.XY_HOLD)
+        ok = await self.takeoff_all()
+        if not ok or self.abort_requested:
+            log.error("take-off failed or aborted")
+            return 4
+        start = {i: fl.loc.state(i).pos for i in self.links}
+        plan = MissionPlan(mission, start, limits)
+        rep = validate_plan(plan, self.cfg.arena, self.cfg.safety, self.cfg.plant, self.cfg.control)
+        self.plan_report = rep
+        log.info("plan: transfer %.1f s, formation %.1f s, min separation %.3f m, max speed %.2f m/s",
+                 plan.t_transfer, plan.formation_duration, rep.min_separation_m, rep.max_speed_m_s)
+        if not rep.ok:
+            for p in rep.problems:
+                log.error("PLAN REJECTED: %s", p)
+            return 6
+        fl.start_mission(plan, now())
+        while not fl.mission_done and not self.abort_requested:
+            self._check_links()
+            await asyncio.sleep(0.05)
+        if fl.abort_reason or self.abort_requested:
+            for i in self.links:                # survivors hold briefly, then everyone lands
+                if fl.mode[i] == Mode.FULL:
+                    fl.hold_here(i, Mode.FULL)
+            await asyncio.sleep(float(self.cfg.safety.get("abort_hold_s", 1.0)))
+            return 7
+        return 0

@@ -1,0 +1,40 @@
+# Logitech C920 - the camera on Drona's Airlink rig.
+# Used by profile `airlink`. Same monocular RGB pipeline as our D455 (no depth).
+#
+# STATUS: intrinsics NOT calibrated. They differ per unit and we cannot touch
+# Drona's camera: request ~20 ChArUco images at the fixed focus below (or their
+# calibration file) at least one working day before Airlink session 1.
+
+model: logitech_c920
+shutter: rolling              # timestamp detections per image row (see readout_s)
+width: 1920
+height: 1080
+fps: 30
+fourcc: MJPG                  # 1080p30 needs MJPEG over USB 2
+readout_s: 0.030              # approx. top-to-bottom row readout; measure if possible
+
+# Nominal geometry, used only until calibration exists.
+nominal:
+  diagonal_fov_deg: 78.0      # datasheet; ~70.4 x 43.3 deg at 16:9
+  fx_px: 1360
+  fy_px: 1360
+
+intrinsics:                   # filled in by `apps/calibrate.py`
+  calibrated: false
+  camera_matrix: null         # 3x3
+  dist_coeffs: null           # k1 k2 p1 p2 k3
+  rms_px: null
+
+# Every automatic feature must be OFF: a focus change moves the focal length and
+# silently invalidates calibration. Applied with v4l2 at start-up and read back.
+# Control names differ between kernel versions; both spellings are listed.
+v4l2_controls:
+  focus_automatic_continuous: 0   # older kernels: focus_auto
+  focus_absolute: 0               # 0 = infinity; keep identical to calibration
+  auto_exposure: 1                # 1 = manual; older kernels: exposure_auto
+  exposure_time_absolute: 50      # units of 100 us -> 5 ms; older: exposure_absolute
+  gain: 128                       # raise if the image is too dark at 5 ms
+  white_balance_automatic: 0      # older kernels: white_balance_temperature_auto
+  white_balance_temperature: 4000
+  power_line_frequency: 1         # 1 = 50 Hz (India mains) to avoid flicker banding
+  backlight_compensation: 0

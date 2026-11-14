@@ -1,0 +1,8 @@
+# Camera pose in the Airlink arena frame (origin at a floor corner, Z up).
+# Written on site by the extrinsic calibration (floor ArUco markers, one PnP solve).
+# Ask Drona for the camera's mounting height and tilt before session 1.
+
+calibrated: false
+R_arena_cam: null             # 3x3 rotation, camera frame -> arena frame
+t_arena_cam_m: null           # camera position in arena frame, metres
+residual_m: null              # calibration refuses to arm if > 0.01 m

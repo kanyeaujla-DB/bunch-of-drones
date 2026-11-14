@@ -21,9 +21,50 @@ rc:
   takeoff_throttle: 1800       # plutocontrol "box_arm" value sent with the TAKE_OFF command
   takeoff_hold_s: 0.5          # then throttle returns to 1500 (= hold altitude)
 
-# Position-loop gains (P1 - not used by the P0 hover test)
+  disarm_throttle: 1300        # PlutoControl disarm(): throttle 1300 + AUX4 1200
+
+# Stick directions - FIRST THING TO VERIFY at Airlink 1 (one small pulse per axis).
+#   roll  +1: stick > 1500 -> right wing down (moves toward body -y)
+#   pitch +1: stick > 1500 -> nose down (moves forward, body +x)
+#   yaw   +1: stick > 1500 -> yaw angle increases (counter-clockwise seen from above)
+rc_signs: {roll: 1, pitch: 1, yaw: 1}
+
+# Link behaviour
+link:
+  auto_reconnect: true
+  reconnect_backoff_max_s: 2.0
+
+# Command-delay model (Smith-style prediction + estimator input model)
+model:
+  command_delay_s: 0.05        # ground -> firmware (Wi-Fi one way + FC loop); measure: RTT / 2
+  residual_delay_s: 0.04       # what prediction can't remove - used by control/design.py
+  predict_extra_s: 0.0
+
+# Position loop. kp/kd from `python -m pluto_swarm.control.design` (residual delay 40 ms,
+# attitude lag 0.15 s); re-run after Airlink 1 replaces the plant numbers.
 position:
-  kp: 1.2
-  kd: 1.6
-  max_tilt_cmd_deg: 10.0
-  z_kp: 1.0
+  kp: 2.36
+  kd: 2.76
+  ki: 0.0                      # drift is cancelled by the filter's bias state instead
+  i_limit_m_s2: 0.3
+  max_tilt_cmd_deg: 10.0       # command limit (firmware max is 20 deg)
+  z_kp: 1.8
+  z_ki: 0.0
+  cancel_drift: true
+
+# Throttle deadband workaround (architecture doc §5)
+dither:
+  enabled: true
+  margin_us: 4                 # step = deadband + margin = 44 us = 11 cm/s
+
+yaw:
+  kp: 1.0                      # rad/s per rad of heading error
+  max_rate_deg_s: 30
+
+# Formation clock feedback (swarm/synchronizer.py)
+sync:
+  enabled: true
+  k_f: 4.0
+  deadzone_m: 0.05
+  rate_min: 0.5
+  rate_filter_s: 0.5

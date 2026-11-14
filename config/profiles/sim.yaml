@@ -7,7 +7,16 @@ link:
   host_override: 127.0.0.1     # ignore swarm.yaml IPs
   base_port: 5760              # drone i -> 5760 + i
 camera:
-  type: none                   # P1: synthetic
+  type: synthetic              # truth -> pixels -> PnP -> filter (whole real pipeline)
+  model: config/camera/c920.yaml   # simulate the Airlink camera (the harder one)
+  pose:                        # simulated mounting: overhead, 3.5 m up, image-up = arena +Y
+    position: [1.5, 1.5, 3.5]
+    look_at: [1.5, 1.5, 0.0]
+    up: [0.0, 1.0, 0.0]
+  synthetic:
+    pixel_noise_px: 0.3
+    dropout_prob: 0.03
+    latency_s: 0.035
 sim:
   spawn: true                  # run_mission starts the emulator itself (one terminal)
   physics_hz: 200

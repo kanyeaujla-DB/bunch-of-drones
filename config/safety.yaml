@@ -7,6 +7,34 @@ land_battery_v: 3.4            # land immediately below this
 telemetry_timeout_s: 0.5       # no telemetry for this long -> drone marked LOST
 connect_timeout_s: 3.0
 
-tracking:                      # used once localization exists (P1+)
-  degraded_after_s: 0.15
-  lost_after_s: 0.40
+tracking:
+  degraded_after_s: 0.15       # no camera fix this long -> level sticks, firmware holds
+  lost_after_s: 0.40           # -> that drone LANDs, mission aborts, others hold then land
+  max_pos_std_m: 0.08          # filter uncertainty above this -> DEGRADED
+
+divergence:                    # catches wrong stick signs / bad gains on first flights
+  error_m: 0.40
+  time_s: 1.0
+
+abort_hold_s: 1.0              # survivors hold this long before everyone lands
+
+limits:
+  v_max_m_s: 0.6               # plan validation
+  transfer_v_max_m_s: 0.4      # take-off spot -> formation slot
+  transfer_a_max_m_s2: 0.8
+  transfer_t_min_s: 3.0
+  # Take-off -> formation moves are short and guarded by the runtime filter, so they
+  # get their own floor: 0.45 m = 0.314 m physical minimum (16.4 cm airframe + 15 cm)
+  # + 2 x 6.8 cm. Formations themselves must keep min_separation_m (0.514 m).
+  transfer_min_separation_m: 0.45
+
+# Runtime collision filter (control barrier function, safety/cbf_filter.py)
+cbf:
+  enabled: true
+  separation_m: 0.514
+  filter_margin: 0.85          # filter guards 85 % of min_separation (plan keeps the full value)
+  downwash_xy_over_z: 0.4      # Crazyflie-style ellipsoid r_xy / r_z (Preiss et al.)
+  a_max_m_s2: 1.5
+  gamma: 5.0
+  neighbour_radius_m: 1.5
+  iterations: 50

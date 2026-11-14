@@ -1,8 +1,10 @@
 """DroneLink - the swappable edge between our software and one drone.
 
 Anything that can carry RC frames to a drone and telemetry back implements this:
-  * MspLink    - MSP over TCP (real Pluto via Wi-Fi, AND our simulator)
-  * (later)    - an in-process link for very fast tests, if ever needed
+  * MspLink          - MSP over TCP (real Pluto via Wi-Fi, AND our simulator).
+                       The default: one asyncio loop drives every drone.
+  * PlutoControlLink - FALLBACK: Drona's own PlutoControl library sends the
+                       bytes (its writer thread); we only decode replies.
 
 The rest of the code only ever talks to DroneLink, never to sockets.
 """
@@ -10,7 +12,9 @@ The rest of the code only ever talks to DroneLink, never to sockets.
 from __future__ import annotations
 
 import abc
+from typing import Optional
 
+from ..core.clock import now
 from ..core.types import FirmwareCommand, RCFrame, Telemetry
 
 
@@ -43,3 +47,17 @@ class DroneLink(abc.ABC):
     @abc.abstractmethod
     def connected(self) -> bool:
         ...
+
+    # ---- optional hooks with safe defaults ----
+    def write_tick(self) -> None:
+        """Called by SwarmTicker once per tick. Links with their own sender
+        thread (PlutoControlLink) leave this as a no-op."""
+
+    async def drain(self) -> None:
+        """Flush whatever write_tick queued."""
+
+    def telemetry_age(self, t: Optional[float] = None) -> float:
+        """Seconds since any telemetry arrived (inf if never)."""
+        t = now() if t is None else t
+        tel = self.telemetry
+        return float("inf") if tel.t == 0.0 else t - tel.t

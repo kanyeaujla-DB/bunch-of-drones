@@ -1,0 +1,32 @@
+# Localization settings (architecture doc §4). Owner: localization.
+
+marker:
+  dictionary: DICT_4X4_50     # ArUco dictionary; marker_id per drone in swarm.yaml
+  size_m: 0.08                # black-border edge length - MEASURE THE PRINT WITH CALIPERS
+  height_above_centre_m: 0.03 # marker plane above the drone's centre of mass
+  # marker +x = drone nose (body x), marker +y = drone left (body y), marker +z = up
+
+detector:
+  corner_refinement: subpix
+  min_marker_perimeter_rate: 0.02   # allow small markers (~20 px)
+  max_reprojection_px: 3.0          # reject poses whose corners re-project worse than this
+
+# Per-drone Kalman filter: state [p(3), v(3), d(3), baro_bias]
+filter:
+  rate_hz: 50                       # prediction rate (= control rate)
+  accel_noise_m_s2: 0.6             # unmodelled acceleration (process noise on v)
+  bias_walk_m_s2_per_sqrt_s: 0.05   # drift-state random walk (wind, trim, battery sag)
+  baro_bias_walk_m_per_sqrt_s: 0.02
+  cam_sigma_xy_m: 0.01              # camera measurement noise (overridden per detection)
+  cam_sigma_z_m: 0.03
+  baro_sigma_m: 0.04
+  nis_gate: 16.3                    # chi-square 3 dof, 99.9 %: reject outliers
+  history_s: 1.0                    # how far back a delayed measurement may be inserted
+  yaw_gain: 0.3                     # complementary yaw filter gain per camera update
+
+# Rolling-shutter + latency handling
+timing:
+  camera_latency_s: 0.035           # capture -> detection available (measured on site)
+  baro_delay_from_rtt: 0.5          # baro sample time = arrival - this * RTT
+
+# Tracking health thresholds come from config/safety.yaml (tracking.*)
