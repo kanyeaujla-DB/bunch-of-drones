@@ -15,4 +15,6 @@ rotation_period_s: 20.0      # tangential speed 0.22 m/s
 rotation_direction: cw       # cw | ccw, seen from above (looking down -Z)
 m: 0                         # phase step between neighbours = m * 2*pi / N
 centre: [1.5, 1.5]
-ramp_periods: 2
+ramp_periods: 2              # amplitude (and rotation) fade in/out, in Z periods
+cycles: 4                    # full-amplitude Z periods (4 x 5 s = one rotation)
+settle_s: 1.5

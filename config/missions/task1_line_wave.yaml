@@ -21,3 +21,5 @@ period_s: 6.0                # peak climb rate A*2*pi/T = 0.31 m/s (alt-hold lim
 wavelength_m: null           # null = N * spacing_m
 centre: [1.5, 1.5]
 ramp_periods: 2              # amplitude fades in/out over this many periods
+cycles: 3                    # full-amplitude periods between the ramps
+settle_s: 1.5

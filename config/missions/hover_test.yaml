@@ -1,6 +1,8 @@
-# P0 exit test: all drones take off, hover, land - from one command.
-# No position loop yet: sticks stay neutral, so drones drift (that is expected in P0).
+# Hover test. Open loop (camera.type none): firmware hold only, drones drift.
+# Closed loop (any camera): every drone holds its take-off spot at height_m.
 
 name: hover_test
 type: hover
 hover_s: 8.0
+height_m: 1.0
+settle_s: 0.5
