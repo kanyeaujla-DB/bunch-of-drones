@@ -1,0 +1,29 @@
+# Ground-station control loop settings.
+
+rate_hz: 50                    # RC frames per second per drone (must stream continuously)
+
+# Telemetry polling (requests sent by the link each tick / every N ticks)
+telemetry:
+  attitude_every_n_ticks: 1    # 50 Hz
+  altitude_every_n_ticks: 1    # 50 Hz
+  analog_every_n_ticks: 50     # 1 Hz (battery)
+
+# RC channel defaults - order on the wire: roll, pitch, throttle, yaw, aux1, aux2, aux3, aux4
+# Values copied from plutocontrol 2.0.0 (AUX4 = arm switch: 1500 armed, 1200 disarm).
+rc:
+  neutral: 1500
+  aux1: 1500
+  aux2: 1000                   # 1500 = developer/debug mode
+  aux3: 1500
+  aux4_disarmed: 1000
+  aux4_armed: 1500
+  aux4_disarm_cmd: 1200
+  takeoff_throttle: 1800       # plutocontrol "box_arm" value sent with the TAKE_OFF command
+  takeoff_hold_s: 0.5          # then throttle returns to 1500 (= hold altitude)
+
+# Position-loop gains (P1 - not used by the P0 hover test)
+position:
+  kp: 1.2
+  kd: 1.6
+  max_tilt_cmd_deg: 10.0
+  z_kp: 1.0

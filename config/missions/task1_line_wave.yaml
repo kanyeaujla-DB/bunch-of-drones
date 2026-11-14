@@ -1,0 +1,9 @@
+# Task 1 - line along X, travelling wave in Y (architecture doc §6). Used from P3.
+name: task1_line_wave
+type: line_wave
+spacing_m: 0.60
+height_m: 1.0
+amplitude_m: 0.30
+period_s: 6.0
+centre: [1.5, 1.5]
+ramp_periods: 2

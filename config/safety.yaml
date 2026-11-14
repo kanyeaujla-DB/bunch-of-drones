@@ -1,0 +1,12 @@
+# Safety limits. See architecture doc §7.
+
+min_separation_m: 0.514        # 15 cm edge-to-edge + airframe 16.4 cm + 2 x 10 cm error
+min_battery_v_arm: 3.7         # refuse to arm below this
+land_battery_v: 3.4            # land immediately below this
+
+telemetry_timeout_s: 0.5       # no telemetry for this long -> drone marked LOST
+connect_timeout_s: 3.0
+
+tracking:                      # used once localization exists (P1+)
+  degraded_after_s: 0.15
+  lost_after_s: 0.40

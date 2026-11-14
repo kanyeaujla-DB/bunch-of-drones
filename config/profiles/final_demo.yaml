@@ -1,0 +1,13 @@
+# final_demo: real drones, OUR camera.
+
+name: final_demo
+link:
+  type: msp
+  host_override: null
+  base_port: null
+camera:
+  type: opencv
+  intrinsics: config/camera/intrinsics_ourcam.yaml
+  extrinsics: config/camera/extrinsics_final.yaml
+sim:
+  spawn: false

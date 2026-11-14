@@ -1,0 +1,17 @@
+# gazebo: same emulator physics as `sim`, plus Gazebo for rendering and a
+# simulated overhead camera (sim/gazebo/pose_bridge.py mirrors emulator poses).
+
+name: gazebo
+link:
+  type: msp
+  host_override: 127.0.0.1
+  base_port: 5760
+camera:
+  type: ros_image              # P1: Gazebo camera topic
+  topic: /arena_camera/image_raw
+sim:
+  spawn: true
+  physics_hz: 200
+  link_delay_s: 0.04
+  link_jitter_s: 0.01
+  seed: 1

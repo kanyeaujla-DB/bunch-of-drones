@@ -1,0 +1,13 @@
+# Replace each placeholder with that teammate's GitHub username (e.g. @user123).
+# GitHub then auto-requests their review on any PR touching their folder.
+# Usernames only - no real names (competition anonymity rule).
+/src/pluto_swarm/control/        @CONTROL_OWNER
+/sim/plant/                      @CONTROL_OWNER
+/config/plant/                   @CONTROL_OWNER
+/sim/gazebo/                     @GAZEBO_OWNER
+/src/pluto_swarm/localization/   @LOCALIZATION_OWNER
+/config/camera/                  @LOCALIZATION_OWNER
+/src/pluto_swarm/planning/       @SWARM_OWNER
+/src/pluto_swarm/swarm/          @SWARM_OWNER
+/src/pluto_swarm/safety/         @SWARM_OWNER
+/docker/                         @INFRA_OWNER
